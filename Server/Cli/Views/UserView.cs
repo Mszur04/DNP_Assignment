@@ -102,7 +102,7 @@ public class UserView
         {
             existing = await userRepository.GetSingleAsync(id);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No user found with Id {id}.");
             return;
@@ -139,7 +139,7 @@ public class UserView
             await userRepository.DeleteAsync(id);
             Console.WriteLine("User deleted.");
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No user found with Id {id}.");
         }

@@ -1,0 +1,120 @@
+@WebApi_HostAddress = http://localhost:5087
+
+### List all users
+GET {{WebApi_HostAddress}}/Users
+
+### List users filtered by username
+GET {{WebApi_HostAddress}}/Users?username=ali
+
+### Get a single user
+GET {{WebApi_HostAddress}}/Users/1
+
+### Create a user
+POST {{WebApi_HostAddress}}/Users
+Content-Type: application/json
+
+{
+  "username": "dave",
+  "password": "pw123",
+  "email": "dave@example.com"
+}
+
+### Update a user
+PUT {{WebApi_HostAddress}}/Users/1
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "password1",
+  "email": "alice@example.com"
+}
+
+### Delete a user
+DELETE {{WebApi_HostAddress}}/Users/4
+
+###
+
+### List all posts (each includes AuthorUsername)
+GET {{WebApi_HostAddress}}/Posts
+
+### Filter posts by title
+GET {{WebApi_HostAddress}}/Posts?title=pizza
+
+### Filter posts by author user id
+GET {{WebApi_HostAddress}}/Posts?userId=1
+
+### Filter posts by author username
+GET {{WebApi_HostAddress}}/Posts?username=bob
+
+### Get a single post, including its comments
+GET {{WebApi_HostAddress}}/Posts/1?includeComments=true
+
+### Create a post
+POST {{WebApi_HostAddress}}/Posts
+Content-Type: application/json
+
+{
+  "title": "New post",
+  "body": "Post body",
+  "userId": 1
+}
+
+### Update a post
+PUT {{WebApi_HostAddress}}/Posts/1
+Content-Type: application/json
+
+{
+  "title": "Welcome to the forum (edited)",
+  "body": "This is the very first post. Say hello!",
+  "userId": 1
+}
+
+### Delete a post
+DELETE {{WebApi_HostAddress}}/Posts/5
+
+###
+
+### List comments on a post (nested route)
+GET {{WebApi_HostAddress}}/Posts/1/comments
+
+### Add a comment to a post (nested route)
+POST {{WebApi_HostAddress}}/Posts/1/comments
+Content-Type: application/json
+
+{
+  "body": "Nice post!",
+  "userId": 2
+}
+
+### List all comments
+GET {{WebApi_HostAddress}}/Comments
+
+### Filter comments by user id
+GET {{WebApi_HostAddress}}/Comments?userId=2
+
+### Filter comments by author username
+GET {{WebApi_HostAddress}}/Comments?username=carol
+
+### Filter comments by post id
+GET {{WebApi_HostAddress}}/Comments?postId=1
+
+### Create a comment (standalone)
+POST {{WebApi_HostAddress}}/Comments
+Content-Type: application/json
+
+{
+  "body": "A new comment",
+  "userId": 1,
+  "postId": 2
+}
+
+### Update a comment
+PUT {{WebApi_HostAddress}}/Comments/1
+Content-Type: application/json
+
+{
+  "body": "Edited comment text"
+}
+
+### Delete a comment
+DELETE {{WebApi_HostAddress}}/Comments/1

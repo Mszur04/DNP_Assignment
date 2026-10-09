@@ -108,7 +108,7 @@ public class PostView
         {
             existing = await postRepository.GetSingleAsync(id);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No post found with Id {id}.");
             return;
@@ -144,7 +144,7 @@ public class PostView
             await postRepository.DeleteAsync(id);
             Console.WriteLine("Post deleted.");
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No post found with Id {id}.");
         }
@@ -160,7 +160,7 @@ public class PostView
         {
             post = await postRepository.GetSingleAsync(id);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No post found with Id {id}.");
             return;
@@ -231,7 +231,7 @@ public class PostView
             await userRepository.GetSingleAsync(userId);
             return true;
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             return false;
         }
@@ -244,7 +244,7 @@ public class PostView
             User user = await userRepository.GetSingleAsync(userId);
             return user.Username;
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             return "(unknown user)";
         }

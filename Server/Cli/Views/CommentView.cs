@@ -75,7 +75,7 @@ public class CommentView
         {
             await postRepository.GetSingleAsync(postId);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No post found with Id {postId}. Comment was not added.");
             return;
@@ -86,7 +86,7 @@ public class CommentView
         {
             await userRepository.GetSingleAsync(userId);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No user found with Id {userId}. Comment was not added.");
             return;
@@ -115,7 +115,7 @@ public class CommentView
         {
             existing = await commentRepository.GetSingleAsync(id);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No comment found with Id {id}.");
             return;
@@ -138,7 +138,7 @@ public class CommentView
             await commentRepository.DeleteAsync(id);
             Console.WriteLine("Comment deleted.");
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No comment found with Id {id}.");
         }
@@ -153,7 +153,7 @@ public class CommentView
         {
             await userRepository.GetSingleAsync(userId);
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             Console.WriteLine($"No user found with Id {userId}.");
             return;
@@ -183,7 +183,7 @@ public class CommentView
             Post post = await postRepository.GetSingleAsync(postId);
             return post.Title;
         }
-        catch (InvalidOperationException)
+        catch (NotFoundException)
         {
             return "(unknown post)";
         }
