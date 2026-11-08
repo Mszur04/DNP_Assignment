@@ -19,9 +19,6 @@
   <component name="ChangeListManager">
     <list default="true" id="aa4066b3-231a-450e-aa43-fa59f6158ead" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Assignment/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Assignment/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assignment.sln" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment.sln" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Server/WebApi/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Server/WebApi/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Server/WebApi/Properties/launchSettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/Server/WebApi/Properties/launchSettings.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -119,6 +116,9 @@
       <entry key="D1" value="16.895128626010468" />
       <entry key="W1" value="16.984973219147516" />
     </decayedShown>
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="SWEA" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7,
@@ -265,7 +265,9 @@
     <MESSAGE value="ASSIGNMENT3" />
     <MESSAGE value="qwedrt" />
     <MESSAGE value="ASSIGNMENT4" />
-    <option name="LAST_COMMIT_MESSAGE" value="ASSIGNMENT4" />
+    <MESSAGE value="assignment5+6" />
+    <MESSAGE value="5+6" />
+    <option name="LAST_COMMIT_MESSAGE" value="5+6" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
