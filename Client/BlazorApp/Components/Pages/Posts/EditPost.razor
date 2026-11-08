@@ -1,0 +1,106 @@
+@page "/posts/{Id:int}/edit"
+@attribute [Authorize]
+@using System.Security.Claims
+@using ApiContracts.Posts
+@using BlazorApp.HttpServices.Posts
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IPostService PostService
+@inject NavigationManager NavMgr
+
+<PageTitle>Edit post</PageTitle>
+
+@if (errorMessage is not null)
+{
+    <p style="color:red">@errorMessage</p>
+}
+
+@if (!loaded)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!isOwner)
+{
+    <p style="color:red">You can only edit your own posts.</p>
+}
+else
+{
+    <h3>Edit post</h3>
+    <div class="mb-3">
+        <label>Title:</label>
+        <input type="text" class="form-control" style="max-width:500px" @bind="title" />
+    </div>
+    <div class="mb-3">
+        <label>Body:</label>
+        <textarea class="form-control" style="max-width:500px" rows="5" @bind="body"></textarea>
+    </div>
+    <button class="btn btn-primary" @onclick="SaveAsync">Save</button>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private string title = string.Empty;
+    private string body = string.Empty;
+    private int userId;
+    private int currentUserId;
+    private bool isOwner => userId == currentUserId;
+    private bool loaded;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUserAsync();
+
+        try
+        {
+            PostDto post = await PostService.GetPostAsync(Id);
+            title = post.Title;
+            body = post.Body;
+            userId = post.UserId;
+        }
+        catch (Exception e)
+        {
+            errorMessage = $"Could not load post: {e.Message}";
+        }
+        finally
+        {
+            loaded = true;
+        }
+    }
+
+    private async Task LoadCurrentUserAsync()
+    {
+        if (AuthState is null)
+        {
+            return;
+        }
+
+        AuthenticationState authenticationState = await AuthState;
+        ClaimsPrincipal claimsPrincipal = authenticationState.User;
+        string? userIdAsString = claimsPrincipal.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
+        if (userIdAsString is not null)
+        {
+            currentUserId = int.Parse(userIdAsString);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+        try
+        {
+            await PostService.UpdatePostAsync(Id, new UpdatePostDto
+            {
+                Title = title,
+                Body = body,
+                UserId = userId
+            });
+            NavMgr.NavigateTo($"/posts/{Id}");
+        }
+        catch (Exception e)
+        {
+            errorMessage = $"Could not save post: {e.Message}";
+        }
+    }
+}

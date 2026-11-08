@@ -1,0 +1,55 @@
+@page "/register"
+@using ApiContracts.Users
+@using BlazorApp.HttpServices.Users
+@inject IUserService UserService
+@inject NavigationManager NavMgr
+
+<PageTitle>Register</PageTitle>
+
+<h3>Create an account</h3>
+
+<div class="mb-3">
+    <label>Username:</label>
+    <input type="text" class="form-control" style="max-width:300px" @bind="username" />
+</div>
+<div class="mb-3">
+    <label>Password:</label>
+    <input type="password" class="form-control" style="max-width:300px" @bind="password" />
+</div>
+<div class="mb-3">
+    <label>Email:</label>
+    <input type="email" class="form-control" style="max-width:300px" @bind="email" />
+</div>
+
+@if (!string.IsNullOrEmpty(errorLabel))
+{
+    <label style="color: red">@errorLabel</label>
+}
+
+<button class="btn btn-primary" @onclick="RegisterAsync">Create account</button>
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private string email = string.Empty;
+    private string? errorLabel;
+
+    private async Task RegisterAsync()
+    {
+        errorLabel = "";
+        try
+        {
+            await UserService.AddUserAsync(new CreateUserDto
+            {
+                Username = username,
+                Password = password,
+                Email = email
+            });
+            NavMgr.NavigateTo("/login");
+        }
+        catch (Exception e)
+        {
+            errorLabel = $"Error: {e.Message}";
+        }
+    }
+}

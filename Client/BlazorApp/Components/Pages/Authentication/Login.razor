@@ -1,0 +1,51 @@
+@page "/login"
+@using BlazorApp.Auth
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager NavMgr
+
+<PageTitle>Log in</PageTitle>
+
+<AuthorizeView>
+    <NotAuthorized>
+        <h3>Please log in</h3>
+        <div class="mb-3">
+            <label>User name:</label>
+            <input type="text" class="form-control" style="max-width:300px" @bind="username" />
+        </div>
+        <div class="mb-3">
+            <label>Password:</label>
+            <input type="password" class="form-control" style="max-width:300px" @bind="password" />
+        </div>
+        @if (!string.IsNullOrEmpty(errorLabel))
+        {
+            <label style="color: red">@errorLabel</label>
+        }
+        <div>
+            <button class="btn btn-primary" @onclick="LoginAsync">Log in</button>
+        </div>
+        <p class="mt-3">No account yet? <a href="register">Register here</a>.</p>
+    </NotAuthorized>
+    <Authorized>
+        <h3>Hello, @context.User.Identity?.Name - you're already logged in.</h3>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private string? errorLabel;
+
+    private async Task LoginAsync()
+    {
+        errorLabel = "";
+        try
+        {
+            await ((SimpleAuthProvider)AuthProvider).Login(username, password);
+            NavMgr.NavigateTo("/");
+        }
+        catch (Exception e)
+        {
+            errorLabel = $"Error: {e.Message}";
+        }
+    }
+}
