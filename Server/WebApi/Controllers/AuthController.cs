@@ -2,6 +2,7 @@ using ApiContracts.Auth;
 using ApiContracts.Users;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebApi.Controllers;
@@ -22,10 +23,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public ActionResult<UserDto> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<UserDto>> Login([FromBody] LoginRequest request)
     {
-        User? user = userRepository.GetMany()
-            .SingleOrDefault(u => string.Equals(u.Username, request.Username, StringComparison.OrdinalIgnoreCase));
+        // Database providers can't translate string.Equals(..., StringComparison),
+        // so case-insensitive matching is done via ToLower() instead.
+        string usernameLower = request.Username.ToLower();
+        User? user = await userRepository.GetMany()
+            .SingleOrDefaultAsync(u => u.Username.ToLower() == usernameLower);
 
         if (user is null)
         {

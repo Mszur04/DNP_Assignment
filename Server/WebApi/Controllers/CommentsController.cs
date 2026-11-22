@@ -1,6 +1,7 @@
 using ApiContracts.Comments;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebApi.Controllers;
@@ -46,9 +47,24 @@ public class CommentsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CommentDto>> GetSingle(int id)
     {
-        Comment comment = await commentRepository.GetSingleAsync(id);
-        string authorUsername = await GetAuthorUsernameAsync(comment.UserId);
-        return Ok(ToDto(comment, authorUsername));
+        CommentDto? dto = await commentRepository.GetMany()
+            .Where(c => c.Id == id)
+            .Select(c => new CommentDto
+            {
+                Id = c.Id,
+                Body = c.Body,
+                UserId = c.UserId,
+                AuthorUsername = c.User!.Username,
+                PostId = c.PostId
+            })
+            .FirstOrDefaultAsync();
+
+        if (dto is null)
+        {
+            throw new NotFoundException($"Comment with id {id} not found");
+        }
+
+        return Ok(dto);
     }
 
     /// <summary>
@@ -77,19 +93,24 @@ public class CommentsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(username))
         {
-            List<int> matchingUserIds = userRepository.GetMany()
-                .Where(u => u.Username.Contains(username, StringComparison.OrdinalIgnoreCase))
+            string usernameLower = username.ToLower();
+            List<int> matchingUserIds = await userRepository.GetMany()
+                .Where(u => u.Username.ToLower().Contains(usernameLower))
                 .Select(u => u.Id)
-                .ToList();
+                .ToListAsync();
             query = query.Where(c => matchingUserIds.Contains(c.UserId));
         }
 
-        List<CommentDto> dtos = new();
-        foreach (Comment comment in query.ToList())
-        {
-            string authorUsername = await GetAuthorUsernameAsync(comment.UserId);
-            dtos.Add(ToDto(comment, authorUsername));
-        }
+        List<CommentDto> dtos = await query
+            .Select(c => new CommentDto
+            {
+                Id = c.Id,
+                Body = c.Body,
+                UserId = c.UserId,
+                AuthorUsername = c.User!.Username,
+                PostId = c.PostId
+            })
+            .ToListAsync();
 
         return Ok(dtos);
     }

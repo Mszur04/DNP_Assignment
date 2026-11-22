@@ -2,6 +2,7 @@ using ApiContracts.Comments;
 using ApiContracts.Posts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebApi.Controllers;
@@ -42,17 +43,42 @@ public class PostsController : ControllerBase
     /// GET /Posts/{id}?includeComments=true - set includeComments to also
     /// get the post's comments in the same response, instead of a second
     /// round-trip to GET /Posts/{id}/comments.
+    ///
+    /// Part 7: this is now a single query - the author's and each
+    /// comment's author's username are pulled in via the Post/Comment
+    /// navigation properties (Post.User, Comment.User) directly inside the
+    /// projection, which EF Core translates into the joins needed to fetch
+    /// everything in one round-trip to the database, instead of the
+    /// separate per-entity lookups the file-based version needed.
     /// </summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PostDto>> GetSingle(int id, [FromQuery] bool includeComments = false)
     {
-        Post post = await postRepository.GetSingleAsync(id);
-        string authorUsername = await GetAuthorUsernameAsync(post.UserId);
+        PostDto? dto = await postRepository.GetMany()
+            .Where(p => p.Id == id)
+            .Select(p => new PostDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Body = p.Body,
+                UserId = p.UserId,
+                AuthorUsername = p.User!.Username,
+                Comments = includeComments
+                    ? p.Comments.Select(c => new CommentDto
+                    {
+                        Id = c.Id,
+                        Body = c.Body,
+                        UserId = c.UserId,
+                        AuthorUsername = c.User!.Username,
+                        PostId = c.PostId
+                    }).ToList()
+                    : null
+            })
+            .FirstOrDefaultAsync();
 
-        PostDto dto = ToDto(post, authorUsername);
-        if (includeComments)
+        if (dto is null)
         {
-            dto.Comments = await GetCommentDtosForPostAsync(id);
+            throw new NotFoundException($"Post with id {id} not found");
         }
 
         return Ok(dto);
@@ -74,7 +100,8 @@ public class PostsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(title))
         {
-            query = query.Where(p => p.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+            string titleLower = title.ToLower();
+            query = query.Where(p => p.Title.ToLower().Contains(titleLower));
         }
 
         if (userId.HasValue)
@@ -84,19 +111,24 @@ public class PostsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(username))
         {
-            List<int> matchingUserIds = userRepository.GetMany()
-                .Where(u => u.Username.Contains(username, StringComparison.OrdinalIgnoreCase))
+            string usernameLower = username.ToLower();
+            List<int> matchingUserIds = await userRepository.GetMany()
+                .Where(u => u.Username.ToLower().Contains(usernameLower))
                 .Select(u => u.Id)
-                .ToList();
+                .ToListAsync();
             query = query.Where(p => matchingUserIds.Contains(p.UserId));
         }
 
-        List<PostDto> dtos = new();
-        foreach (Post post in query.ToList())
-        {
-            string authorUsername = await GetAuthorUsernameAsync(post.UserId);
-            dtos.Add(ToDto(post, authorUsername));
-        }
+        List<PostDto> dtos = await query
+            .Select(p => new PostDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Body = p.Body,
+                UserId = p.UserId,
+                AuthorUsername = p.User!.Username
+            })
+            .ToListAsync();
 
         return Ok(dtos);
     }
@@ -159,23 +191,17 @@ public class PostsController : ControllerBase
 
     private async Task<List<CommentDto>> GetCommentDtosForPostAsync(int postId)
     {
-        List<Comment> comments = commentRepository.GetMany().Where(c => c.PostId == postId).ToList();
-
-        List<CommentDto> dtos = new();
-        foreach (Comment comment in comments)
-        {
-            string authorUsername = await GetAuthorUsernameAsync(comment.UserId);
-            dtos.Add(new CommentDto
+        return await commentRepository.GetMany()
+            .Where(c => c.PostId == postId)
+            .Select(c => new CommentDto
             {
-                Id = comment.Id,
-                Body = comment.Body,
-                UserId = comment.UserId,
-                AuthorUsername = authorUsername,
-                PostId = comment.PostId
-            });
-        }
-
-        return dtos;
+                Id = c.Id,
+                Body = c.Body,
+                UserId = c.UserId,
+                AuthorUsername = c.User!.Username,
+                PostId = c.PostId
+            })
+            .ToListAsync();
     }
 
     /// <summary>
@@ -192,19 +218,6 @@ public class PostsController : ControllerBase
         catch (NotFoundException)
         {
             throw new ValidationException($"User with ID '{userId}' does not exist.");
-        }
-    }
-
-    private async Task<string> GetAuthorUsernameAsync(int userId)
-    {
-        try
-        {
-            User user = await userRepository.GetSingleAsync(userId);
-            return user.Username;
-        }
-        catch (NotFoundException)
-        {
-            return "(unknown user)";
         }
     }
 

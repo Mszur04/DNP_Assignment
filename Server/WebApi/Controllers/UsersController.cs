@@ -1,6 +1,7 @@
 using ApiContracts.Users;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebApi.Controllers;
@@ -19,7 +20,7 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto request)
     {
-        EnsureUsernameIsAvailable(request.Username);
+        await EnsureUsernameIsAvailableAsync(request.Username);
 
         User user = new()
         {
@@ -45,16 +46,24 @@ public class UsersController : ControllerBase
     /// those whose username contains the given substring.
     /// </summary>
     [HttpGet]
-    public ActionResult<List<UserDto>> GetMany([FromQuery] string? username)
+    public async Task<ActionResult<List<UserDto>>> GetMany([FromQuery] string? username)
     {
         IQueryable<User> query = userRepository.GetMany();
 
         if (!string.IsNullOrWhiteSpace(username))
         {
-            query = query.Where(u => u.Username.Contains(username, StringComparison.OrdinalIgnoreCase));
+            // Database providers (EF Core/SQLite included) can't translate
+            // the string.Contains(string, StringComparison) overload, so
+            // case-insensitive matching is done via ToLower() instead -
+            // this one does translate to SQL.
+            string usernameLower = username.ToLower();
+            query = query.Where(u => u.Username.ToLower().Contains(usernameLower));
         }
 
-        List<UserDto> dtos = query.Select(ToDto).ToList();
+        List<UserDto> dtos = await query
+            .Select(u => new UserDto { Id = u.Id, Username = u.Username, Email = u.Email })
+            .ToListAsync();
+
         return Ok(dtos);
     }
 
@@ -65,7 +74,7 @@ public class UsersController : ControllerBase
 
         if (!string.Equals(existing.Username, request.Username, StringComparison.OrdinalIgnoreCase))
         {
-            EnsureUsernameIsAvailable(request.Username, excludingUserId: id);
+            await EnsureUsernameIsAvailableAsync(request.Username, excludingUserId: id);
         }
 
         existing.Username = request.Username;
@@ -83,10 +92,11 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    private void EnsureUsernameIsAvailable(string username, int? excludingUserId = null)
+    private async Task EnsureUsernameIsAvailableAsync(string username, int? excludingUserId = null)
     {
-        bool taken = userRepository.GetMany()
-            .Any(u => u.Id != excludingUserId && string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase));
+        string usernameLower = username.ToLower();
+        bool taken = await userRepository.GetMany()
+            .AnyAsync(u => u.Id != excludingUserId && u.Username.ToLower() == usernameLower);
 
         if (taken)
         {

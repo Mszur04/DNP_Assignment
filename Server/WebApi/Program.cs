@@ -1,4 +1,5 @@
-using FileRepositories;
+using EfcRepositories;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 using WebApi.Middleware;
 
@@ -7,14 +8,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Register the repository implementations for Dependency Injection.
-// This is the only place the concrete (file-based) repository types are
-// known about - controllers only ever ask for the interfaces. Swapping to
-// a different implementation later (e.g. a database) means changing only
-// these three lines.
-builder.Services.AddSingleton<IUserRepository, UserFileRepository>();
-builder.Services.AddSingleton<IPostRepository, PostFileRepository>();
-builder.Services.AddSingleton<ICommentRepository, CommentFileRepository>();
+// Part 7: swapped the file-based repositories for EF Core ones, backed by
+// a real SQLite database. ForumDbContext configures its own connection string
+// in OnConfiguring, so no options callback is needed here.
+builder.Services.AddDbContext<ForumDbContext>();
+
+// The repositories now depend on ForumDbContext, which is registered above
+// with its default (Scoped) lifetime. The repositories must therefore be
+// Scoped too, not Singleton like the old file repositories were - a
+// Singleton isn't allowed to depend on a Scoped service, and ASP.NET Core
+// will refuse to start up if it is.
+builder.Services.AddScoped<IUserRepository, EfcUserRepository>();
+builder.Services.AddScoped<IPostRepository, EfcPostRepository>();
+builder.Services.AddScoped<ICommentRepository, EfcCommentRepository>();
 
 builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
